@@ -23,19 +23,19 @@ class RPSenv():
 		self.norm_mu = 0				# center point for guassian distribution
 		self.norm_sigma = 2.0			# sigma for std distribution 
 		self.seqIndex = 0				# index for pointing to the SEQ sequnce 
-		self.p2Mode = 'PRNG'  			# SEQ or PRNG
+		self.p2Mode = 'SEQ'  			# SEQ or PRNG or LFSR
 		self.p2Count = [0, 0, 0] 		# player 2 win tie lost count
 		self.p1Count = [0, 0, 0]		# player 1 win tie lost count
 		self.window = 8					# window size for rate trending calc
 		self.cumWinRate, self.cumTieRate, self.cumLostRate = None, None, None
 		self.cumWinCount, self.cumTieCount, self.cumLostCount = None, None, None
 		self.winRateTrend, self.tieRateTrend, self.lostRateTrend = 0, 0, 0
-		self.winRateTrendCount, self.tieRateTrendCount, self.lostRateTrendCount = 0, 0, 0
 		self.winRateMovingAvg, self.tieRateMovingAvg, self.lostRateMovingAvg = 0, 0, 0
 		self.winRateBuf, self.tieRateBuf, self.lostRateBuf \
 			= deque(maxlen=self.window), deque(maxlen=self.window), deque(maxlen=self.window)
 		# put all the observation state in here; shape in Keras input format
-		self.state = np.array([[None, None, None, \
+		self.state = np.array([[ \
+			None, None, None, \
 			self.winRateTrend, self.tieRateTrend, self.lostRateTrend, \
 			self.winRateMovingAvg, self.tieRateMovingAvg, self.lostRateMovingAvg \
 			]])  
@@ -45,7 +45,6 @@ class RPSenv():
 		self.cumWinRate, self.cumTieRate, self.cumLostRate = 0, 0, 0
 		self.cumWinCount, self.cumTieCount, self.cumLostCount = 0, 0, 0
 		self.winRateTrend, self.tieRateTrend, self.lostRateTrend = 0, 0, 0
-		self.winRateTrendCount, self.tieRateTrendCount, self.lostRateTrendCount = 0, 0, 0
 		self.winRateMovingAvg, self.tieRateMovingAvg, self.lostRateMovingAvg = 0, 0, 0
 		return np.array([0, 0, 0, 0, 0, 0, 0, 0, 0])
 
@@ -82,28 +81,26 @@ class RPSenv():
 			tmp[2] = sum(self.lostRateBuf[i] for i in range(self.window)) / self.window
 			# win rate trend analysis
 			if self.winRateMovingAvg  < tmp[0]: 
-				self.winRateTrend, tmp_reward[0]  = 1, 1		# win rate trending up. That's good
+				self.winRateTrend = 1		# win rate trending up. That's good
 			else: 
-				self.winRateTrend, tmp_reward[0]  = 0, 0		# win rate trending down. That's bad
+				self.winRateTrend = 0		# win rate trending down. That's bad
 			# tie rate trend analysis
 			if self.tieRateMovingAvg  < tmp[1]:
-				self.tieRateTrend, tmp_reward[1] = 1, 0  		# tie rate trending up. That's bad
+				self.tieRateTrend = 1  		# tie rate trending up. That's bad
 			else:
-				self.tieRateTrend, tmp_reward[1]  = 0, 0  		# tie rate trending down.  Neutral
+				self.tieRateTrend = 0  		# tie rate trending down.  Neutral
 			# lost rate trend analysis
 			if self.lostRateMovingAvg  < tmp[2]:
-				self.lostRateTrend, tmp_reward[2] = 1, 0  		# lost rate trending up.  That's bad
+				self.lostRateTrend = 1  	# lst rate trending up.  That's bad
 			else:
-				self.lostRateTrend, tmp_reward[2]  = 0, 0  	# lost rate trending down. That's good
+				self.lostRateTrend = 0  	# lost rate trending down. That's good
 			self.winRateMovingAvg, self.tieRateMovingAvg, self.lostRateMovingAvg = tmp[0], tmp[1], tmp[2]
-			self.winRateTrendCount += self.winRateTrend
-			self.tieRateTrendCount += self.tieRateTrend
-			self.lostRateTrendCount += self.lostRateTrend
 		# net reward in this round
 		reward = win 									
 		# record the state and reshape it for Keras input format
 		dim = self.state.shape[1]
-		self.state = np.array([win, tie, lost, \
+		self.state = np.array([\
+			win, tie, lost, \
 			self.winRateTrend, self.tieRateTrend, self.lostRateTrend, \
 			self.winRateMovingAvg, self.tieRateMovingAvg, self.lostRateMovingAvg \
 			]).reshape(1, dim)
@@ -138,8 +135,8 @@ class DDQN:
         self.model        = self.create_model()
         self.target_model = self.create_model()
         # some space to collect TD target for instrumentaion
-        self.TDtarget = []
-        self.Qmax, self.Q_targetmax, self.Q_future =[], [], []
+        self.TDtargetdelta = []
+        self.Qmax =[]
 
     def create_model(self):
         model   = Sequential()
@@ -174,7 +171,6 @@ class DDQN:
     def replay(self):  		# DeepMind "experience replay" method
     	# the sample size from memory to learn from
         batch_size = 32
-        targettmp, TDtargettmp, Q_futuretmp = 0, 0 , 0
         # do nothing untl the memory is large enough
         if len(self.memory) < batch_size: return
         # get the samples
@@ -183,21 +179,17 @@ class DDQN:
         for sample in samples:
             state, action, reward, new_state, done = sample
             target = self.target_model.predict(state)
-            targettmp += max(target[0])
             #print('target at state is ', target)
             if done:
                 target[0][action] = reward
             else:
                 Q_future = max(self.target_model.predict(new_state)[0]) 
-                target[0][action] = reward + Q_future * self.gamma 		# a.k.a TD_target
-                Q_futuretmp += Q_future
-                TDtargettmp += target[0][action]
+                TDtarget = reward + Q_future * self.gamma
+                self.TDtargetdelta.append(TDtarget - target[0][action])
+                target[0][action] = TDtarget	 			
             # do one pass gradient descend using target as 'label' to train the action model
             self.model.fit(state, target, epochs=1, verbose=0)
-        # addd instrumentation; need to average out from experience replay
-        self.Q_targetmax.append(targettmp / batch_size)
-        self.Q_future.append(Q_futuretmp / batch_size)
-        self.TDtarget.append(TDtargettmp / batch_size)
+        
 
     def target_train(self):
     	# transfer weights  proportionally from the action/behave model to the target model
@@ -213,13 +205,14 @@ class DDQN:
 # ------------------------- main body here ----------------------------------------
 
 def main():
-	episodes, trial_len =  90, 300					# lenght of game play
+	episodes, trial_len =  30, 300					# lenght of game play
 	stage, totalStages = 0, 3						# # of stages with change distribution
 	sigma_reduce = -0.3								# sigma change amount at each stage
 	cumReward, argmax = 0, 0						# init for intrumentation
 	steps, rateTrack = [], []
 	avgQmaxList, avgQ_futureList,avgQ_targetmaxList, avgTDtargetList = [], [], [], []
 	avgCumRewardList = []
+	p1Rate, p2Rate = [], []
 	# declare the game play environment and AI agent
 	env = RPSenv()
 	dqn_agent = DDQN(env=env)
@@ -227,12 +220,11 @@ def main():
 	for episode in range(episodes):
 		cur_state = env.reset().reshape(1,env.state.shape[1])   # reset and get initial state in Keras shape
 		cumReward = 0
-		# Select play strategy
+		# Select play strategy (apply to PRNG mode only)
 		#   this change strategy affects distribution of r-p-s
 		if (episode+1) % (episodes // totalStages) == 0: env.norm_sigma += sigma_reduce	# step repsonse change the gaussian distribution
 		#   this change strategy affects which move is dominant (control in randmove module)
 		stage = episode // (episodes // totalStages)									# divide total episodes into 3 equal length stages
-		print ('stage', stage, 'sigma', env.norm_sigma)
 		for step in range(trial_len):
 			# AI agent take one action
 			action = dqn_agent.act(cur_state)
@@ -249,42 +241,26 @@ def main():
 			cur_state = new_state
 			if done:
 				break
-		
 		#store epsiode #, winr rate, tie rate, lost rate
-		rateTrack.append([episode+1, \
-			env.cumWinRate, env.cumTieRate, env.cumLostRate, \
-			env.winRateTrendCount, env.tieRateTrendCount, env.lostRateTrendCount])
+		rateTrack.append([episode+1, env.cumWinRate, env.cumTieRate, env.cumLostRate])
 		if True:		# print ongoing performance
-			print('EPISODE ', episode + 1, \
-				'\n WIN RATE %.2f ' % env.cumWinRate, \
+			print('EPISODE ', episode + 1), 
+			if env.p2Mode == 'PRNG': print('stage:', stage, ' sigma:', env.norm_sigma)
+			print(' WIN RATE %.2f ' % env.cumWinRate, \
 				'    tie rate %.2f' % env.cumTieRate, \
 				'lose rate %.2f' % env.cumLostRate)
 		
 		# print move distribution between the players
-		if True:		 
-			cumMoves = trial_len
-			print (' P1 rock rate: %.2f paper rate: %.2f scissors rate: %.2f' % \
-				(env.p1Count[0] / cumMoves, \
-				env.p1Count[1] / cumMoves, \
-				env.p1Count[2] / cumMoves))
-			print (' P2 rock rate: %.2f paper rate: %.2f scissors rate: %.2f' % \
-				(env.p2Count[0] / cumMoves, \
-				env.p2Count[1] / cumMoves, \
-				env.p2Count[2] / cumMoves))
+		if True:
+			p1Rate.append([env.p1Count[0] / trial_len, env.p1Count[1] / trial_len, env.p1Count[2] / trial_len])
+			p2Rate.append([env.p2Count[0] / trial_len, env.p2Count[1] / trial_len, env.p2Count[2] / trial_len])
+			print (' P1 rock rate: %.2f paper rate: %.2f scissors rate: %.2f' %  (p1Rate[-1][0], p1Rate[-1][1], p1Rate[-1][2]))
+			print (' P2 rock rate: %.2f paper rate: %.2f scissors rate: %.2f' %  (p2Rate[-1][0], p2Rate[-1][1], p2Rate[-1][2]))
 			env.p1Count, env.p2Count = [0,0,0], [0,0,0]
 		
-		# summarize average reward, TD target, Q values 
+		# summarize Qmax from action model and reward 
 		avgQmax = sum(dqn_agent.Qmax) / trial_len  	# from action model
 		avgQmaxList.append(avgQmax)
-
-		avgQ_future = sum(dqn_agent.Q_future) / trial_len  	# from action model
-		avgQ_futureList.append(avgQ_future)
-		
-		avgQ_targetmax = sum(dqn_agent.Q_targetmax) / trial_len  	# from action model
-		avgQ_targetmaxList.append(avgQ_targetmax)
-		
-		avgTDtarget = sum(dqn_agent.TDtarget) / trial_len  	# from action model
-		avgTDtargetList.append(avgTDtarget)
 
 		avgCumReward = cumReward / trial_len
 		avgCumRewardList.append(avgCumReward)
@@ -305,26 +281,29 @@ def main():
 		fig = plt.figure(figsize=(12,5))	
 		plt.subplots_adjust(wspace = 0.1)
 		# plot the average Qmax
-		rpsplot = fig.add_subplot(221)
+		rpsplot = fig.add_subplot(321)
 		plt.title('Average Qmax from action model', loc='Left', weight='bold', color='Black')
 		rpsplot.plot(avgQmaxList, color='blue')
-		
+		# plot the TDtarget
+		rpsplot = fig.add_subplot(323)
+		plt.title('TD target minus Q target from experience replay', loc='Left', weight='bold', color='Black')
+		rpsplot.plot(dqn_agent.TDtargetdelta, color='blue')
+		# plot the reward 
+		rpsplot = fig.add_subplot(325)
+		plt.title('Average Reward per Episode', loc='Left', weight='bold', color='Black')
+		rpsplot.plot(avgCumRewardList, color='green')
 		# plot thte win rate
-		rpsplot = fig.add_subplot(222)
+		rpsplot = fig.add_subplot(322)
 		plt.title('Win-Tie-Lost Rate', loc='Left', weight='bold', color='Black')
 		rpsplot.plot([i[1] for i in rateTrack], color='green')
 		rpsplot.plot([i[2] for i in rateTrack], color='blue')
 		rpsplot.plot([i[3] for i in rateTrack], color='red')
 		# plot thte win rate
-		rpsplot = fig.add_subplot(223)
-		plt.title('Q values from target model', loc='Left', weight='bold', color='Black')
-		rpsplot.plot(avgQ_futureList, color='orange')
-		rpsplot.plot(avgQ_targetmaxList, color='red')
-		rpsplot.plot(avgTDtargetList, color='green')
-		# plot thte win rate
-		rpsplot = fig.add_subplot(224)
-		plt.title('Average Reward per Episode', loc='Left', weight='bold', color='Black')
-		rpsplot.plot(avgCumRewardList, color='green')
+		rpsplot = fig.add_subplot(324)
+		plt.title('Player 2 move percentage', loc='Left', weight='bold', color='Black')
+		rpsplot.plot([i[0] for i in p2Rate], color='orange')
+		rpsplot.plot([i[1] for i in p2Rate], color='red')
+		rpsplot.plot([i[2] for i in p2Rate], color='green')
 		plt.show(block = False)
 	
 if __name__ == "__main__":
