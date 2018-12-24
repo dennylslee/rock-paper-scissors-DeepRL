@@ -123,7 +123,7 @@ class DDQN:
         self.env     = env
         # initialize the memory and auto drop when memory exceeds maxlen
         # this controls how far out in history the "expeience replay" can select from
-        self.memory  = deque(maxlen=200)   
+        self.memory  = deque(maxlen=2000)   
         # future reward discount rate of the max Q of next state
         self.gamma = 0.85				  
         # epsilon denotes the fraction of time dedicated to exploration (as oppse to exploitation)
@@ -171,7 +171,7 @@ class DDQN:
 		# store up a big pool of memory
         self.memory.append([state, action, reward, new_state, done])
 
-    def replay(self):
+    def replay(self):  		# DeepMind "experience replay" method
     	# the sample size from memory to learn from
         batch_size = 32
         targettmp, TDtargettmp, Q_futuretmp = 0, 0 , 0
@@ -183,7 +183,7 @@ class DDQN:
         for sample in samples:
             state, action, reward, new_state, done = sample
             target = self.target_model.predict(state)
-            targettmp += max(target)
+            targettmp += max(target[0])
             #print('target at state is ', target)
             if done:
                 target[0][action] = reward
@@ -192,7 +192,7 @@ class DDQN:
                 target[0][action] = reward + Q_future * self.gamma 		# a.k.a TD_target
                 Q_futuretmp += Q_future
                 TDtargettmp += target[0][action]
-            # do one pass for gradient descend using target as 'label'
+            # do one pass gradient descend using target as 'label' to train the action model
             self.model.fit(state, target, epochs=1, verbose=0)
         # addd instrumentation; need to average out from experience replay
         self.Q_targetmax.append(targettmp / batch_size)
@@ -213,8 +213,9 @@ class DDQN:
 # ------------------------- main body here ----------------------------------------
 
 def main():
-	episodes, trial_len =  60, 300					# lenght of game play
-	stage, totalStages = 0, 2
+	episodes, trial_len =  90, 300					# lenght of game play
+	stage, totalStages = 0, 3						# # of stages with change distribution
+	sigma_reduce = -0.3								# sigma change amount at each stage
 	cumReward, argmax = 0, 0						# init for intrumentation
 	steps, rateTrack = [], []
 	avgQmaxList, avgQ_futureList,avgQ_targetmaxList, avgTDtargetList = [], [], [], []
@@ -227,8 +228,11 @@ def main():
 		cur_state = env.reset().reshape(1,env.state.shape[1])   # reset and get initial state in Keras shape
 		cumReward = 0
 		# Select play strategy
-		if episode+1 % (episodes // totalStages) == 0: env.norm_sigma -= 0.5			# step repsonse change the gaussian distribution
-		# stage = episode // 	(episodes // totalStages)									# divide total episodes into 3 equal length stages
+		#   this change strategy affects distribution of r-p-s
+		if (episode+1) % (episodes // totalStages) == 0: env.norm_sigma += sigma_reduce	# step repsonse change the gaussian distribution
+		#   this change strategy affects which move is dominant (control in randmove module)
+		stage = episode // (episodes // totalStages)									# divide total episodes into 3 equal length stages
+		print ('stage', stage, 'sigma', env.norm_sigma)
 		for step in range(trial_len):
 			# AI agent take one action
 			action = dqn_agent.act(cur_state)
@@ -321,8 +325,7 @@ def main():
 		rpsplot = fig.add_subplot(224)
 		plt.title('Average Reward per Episode', loc='Left', weight='bold', color='Black')
 		rpsplot.plot(avgCumRewardList, color='green')
-
 		plt.show(block = False)
-
+	
 if __name__ == "__main__":
 	main()
