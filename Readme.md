@@ -4,23 +4,23 @@ The objective of this project is to construct an AI agent to play a simple 2 pla
 
 In previous design project, we have built a player using simple LSTM-based neural network that is trained using traditional supervised learning method.  The downside of that is the model is effectively static and does not adapt to model drift or fundamental behavioral changes.  With a RL-based approach, we like to see that the AI agent demostrate some ability to counter the changing strategy of the opponent and continue to generate better win rate than the opposing player.  
 
-Note that unlike other RL project in which the AI agent is to learn a task successfully and generalize to other future data (i.e. a form of semi supervised learning using rewards as label), in this particular set up, there is no completion per se.  That is the game never ends, the RL agent simply continues to adapt and adjust as best as it can. 
+Note that unlike other RL project in which the AI agent is to learn a task successfully and generalize to other future data (i.e. a form of semi supervised learning using rewards as label - this is my analogy and is technically not precise), in this particular set up, there is no completion per se.  That is the game never ends. The RL agent simply continues to adapt and adjust as best as it can. 
 
 ## Q-Learning Basics
 
-This project utiltized the double-DQN RL algorithm as the basis for the AI agent as player 1.  DeepMind was very instrutmental in pinoeering and popularizing Q-learning with multple enhancements - thought Q-Learning was first introduced by Watkins in 1992.  See few popular papers on DQN (deep Q-learning network) in the reference section.
+This project utiltized the double-DQN RL algorithm as the basis for the AI agent as player 1.  DeepMind was very instrutmental in popularizing Q-learning recent and had contributed multple architectural enhancements in recent years - thought Q-Learning was first pioneered by Watkins in 1992.  See few popular papers on DQN (deep Q-learning network) in the reference section.
 
-In its essence, Deep Q-Learning is to learn a "policy" (which in practice is a deep learning network) such that it maximizes the expected return of future action. The Q-value is the "action value" function. The Q-value's absolute magnitude has no real meaning but is recurrsively derived to guide the system which action to take at the moment such that such action is believed to lead to maximum future rewards. 
+In its essence, Deep Q-Learning is to learn a "policy" (which in practice is a deep learning network) such that it maximizes the expected return of future action. The Q-value is the "action value" function. Its absolute magnitude has no real meaning but is recurrsively derived to guide the system which action to take at any moment such that the chosen action is believed to lead to maximum future rewards. 
 
-Some of the enhancments utilized in this design over beyond the basic Q-learning (which are introduced mainly be DeepMind in recent years) are:
+Some of the enhancments utilized in this design that is over and beyond basic Q-learning are as following.  Most of these are introduced mainly by DeepMind in recent years. 
 
-1) Dual models (hence the term "double") - one to drive the action decision (also sometime refers as online model, behavior model) and one to act as the target model.  The inner weights are "tranferred" from the action model to the target model on every move cycle.
-2) Exploiting vs exploration using epsilon greedy method. This is essentia in any RL design since exploration is important, especially during the start of the process, to search in different areas of state space which might lead to better optimal operation position.  When exploring, it is often termed "off-policy" whereas taking an action according to exploitatin is often termed "on-policy".
-3) Experience reply - instead of using most recent history as the learning space, DeepMind introduced the concept of experience reply in which past pass through of the state space is stored in memory.  Such memory are recalled (sampled) at each move and used in the SGD process (thus achieving the reinforcement notion)
+1) Dual models (hence the term "double") - one model is to drive the action decision (also sometime refers as online model or behavior model) and one to act as the target model.  The inner weights are "tranferred" from the action model to the target model on every move cycle.
+2) Exploiting vs exploration using epsilon-greedy method. This is essential in any RL design since exploration is important, especially during the start of the process, for searching in different areas of that state space that might lead to better optimal operation position.  When exploring, it is often termed "off-policy" whereas taking an action according to exploitation is often termed "on-policy".
+3) Experience reply - instead of using most recent history as the learning space, DeepMind introduced the concept of experience reply in which past pass-through of the state space is stored in memory.  Such memories are recalled (sampled) at each move and used in the SGD process (thus achieving the reinforcement notion).
 
 ## Acknowledgement
 
-Much of the code is adopted from A. Oppermann's blog in Medium. It is an excellent tutorial and walk through. You can find it [here](https://towardsdatascience.com/self-learning-ai-agents-part-ii-deep-q-learning-b5ac60c3f47)
+Much of the code is adopted from A. Oppermann's blog in Medium. It is an excellent tutorial with detailed walk through. You can find it [here](https://towardsdatascience.com/self-learning-ai-agents-part-ii-deep-q-learning-b5ac60c3f47).
 
 # RPS High Level Environment 
 
@@ -32,23 +32,23 @@ Inside the "environment" is the embedded player 2 (i.e. the opponent).  This pla
 
 1. action space:  either rock, paper, or scissors that the AI agent (player 1) puts out.
 2. rewards:  this is an indication from the environment back to player 1.  The reward is simply a value of 1 if it is a win for player 1, and 0 otherwise.
-3. state:  this is where the fun is and some creative comes into play (which might affect the player outcome win rate). In this setup, we have design the state space to be:
-  - win, tie, lost indicator: one of the three can be set to a 1 for each particular state
-  - winRateTrend, tieRateTrend, lostRateTrend:  this is a indicator which reflects the moving average is trending positive (set to 1) or not (set to 0).  All three indicators are assessed independently.
-  - winRateMovingAvg, tieRateMovingAvg, lostRateMovingAvg: floating point value between 0 and 1 which indicates the percentage of that rate based on configured moving average window size.
+3. state:  this is where the fun is and some creativity comes into play (which might affect the player winning outcome). In this setup, we have designed the state space to be:
+    - win, tie, lost indicators: one of the three can be set to a 1 for a particular state
+    - winRateTrend, tieRateTrend, lostRateTrend:  this is an indicator which reflects a positively-trending moving average (set to 1) or not (set to 0).  All three indicators are assessed independently.
+    - winRateMovingAvg, tieRateMovingAvg, lostRateMovingAvg: floating point value between 0 and 1 which indicates the rate. This rate is calculated based on a configured moving average window size.
 
 
 ## RPS AI player architecture using Double-DQN
 
-The overall architecture of the double-DQN agent design is depicted below.  The yellow section is coded inside the step method and is iterated over experience replay batch size of N samples.  The green section is the design that control the exploration vs exploitation action.  The oragne section is the main action model (on policy).  This is the main model in which we want to find the optimal policy for making the best possible action.  The action model is transferred with discounted to the target model periodically. 
+The overall architecture of the double-DQN agent design is depicted below.  The yellow section is coded inside the step method and is iterated over experience replay batch size of N samples.  The green section is the design that control the exploration vs exploitation action.  The oragne section is the main action model (on policy).  This is the model in which we want to ultimately achieve the optimal policy for making the best possible action.  The action model's weights are transferred with discounted to the target model periodically. 
 
 ![pic2](https://github.com/dennylslee/rock-paper-scissors-DeepRL/blob/master/double_dqn_architecture.png)
 
-(Nothing really special here - just a block diagram version of the commonly published Dobule-DQN pesudo code)
+(Nothing really special here in the illustration - just a block diagram version of the commonly published Dobule-DQN pesudo code)
 
 ## Player 2 ("the opponent") behaviors
 
-The player 2 code is embedded in a separate moduled called randmove. Player 2 can play 3 modes which need to be manually configure:  
+The player 2 code is embedded in a separate moduled called randmove. Player 2 can play 3 modes which need to be manually configured in the environment class setup:  
 
 1. "PRNG" which uses python Gaussian distribution with a controllable mean and sigma value.  The larget the sigma, the larger the spread and the more random the sequence appears (which makes it harder to predict).
 2. "SEQ" this is a simple manually typed in sequence of rock-paper-scissors.
@@ -56,19 +56,21 @@ The player 2 code is embedded in a separate moduled called randmove. Player 2 ca
 
 The results below is based mainly on PRNG in which the play strategy is as following:
 
-1) the overall game play is divided into N (=5) equal length moves called stages
-2) the moves of player 2 in each stage is generated using the PRNG Guassian distribution with different dominant move (rock or paper of scissors)
-3) the sigma value is also decreases as the stage progress 
+1) the overall game play is divided into N (=5) stages, each with equal number of moves
+2) the moves of player 2 in each stage is generated using the PRNG Guassian distribution with different dominant move type (i.e. rock or paper of scissors)
+3) the sigma value is also decreasesd as the stage progress.
 
-The objective is to observe if the RL agent can adjust to the changing behaviors and maintain a win rate.
+The overall game objective is to observe if the RL agent can adjust to the changing behaviors and maintain a good win rate.
  
 ## DNN design
 
-In this project, we used a simple full mesh DNN which proves to be one of the main limitation since the RPS game is essentially a time series (sequence) problem. The DNN model can learn distribution and it has no notion of sequence. 
+In this project, we used a simple full mesh DNN which proves to be one of the main limitation since the RPS game is essentially a time series (sequence) problem. The DNN model can learn distribution but it has no notion of sequence. 
 
-For a high dimensional PRNG like the Guassian generator, a DNN (especially a small one) has no hope in detecting the sequential pattern.  However, it is capable in understanding the distribution statistically and its play strategy is effectively based on observing shift in statistics. 
+For a high dimensional PRNG like the Guassian generator, a DNN (especially a small one) has no hope in detecting the sequential pattern coming from a complex PRNG generator.  However, it is capable in understanding the distribution statistically and its play strategy is effectively based on observing shift in statistics. 
 
 ## Hyperparameters
+
+The following is the set of hyperparammeters in the game which can alter the outcome win rate and in general the adaptability of the AI agent.
 
 1. memory batch size = 32: the larger batch, the more reinforcement is used on each round making the convergence faster but would also make adaptation slower. 
 2. moving window size = 8: change the smoothing factor of moving average state variables.
@@ -81,13 +83,13 @@ action to target model transfer learning (tau): how fast the transfer mimic afte
 
 # Results
 
-The player 2 move percentage clearly depictes the changing strategy across the different stages of the game - each stage with different dominant moves and distribution sigma.  Player 1 (RL agent) seems to successfully adapt to the change and eventually win more due to the weakened player 2 behaviors (i.e. it gets less random over time).  From that perspective, the code has successfully achieved its main objective. 
+The player 2's move percentage clearly depictes the changing strategy across the different stages of the game - each stage with a different dominant move type and a different spread due to the decreasing sigma value.  Player 1 (RL agent) seems to successfully adapt to the change and eventually win more due to the weakened player 2 behaviors (i.e. it gets less random over time).  From that perspective, the code has successfully achieved its main objective. 
 
 However, it is somewhat disappointing that win rate in any state does not outperfrom the statistical behaviors of its opponent since the DNN architecture has the inherent limitation as mentioned in the earlier section. 
 
 ![pic3](https://github.com/dennylslee/rock-paper-scissors-DeepRL/blob/master/main_results_plot.png)
 
-The max Q value of action model is also plotted.  It shows a nice convergenece over the length of game. Corresponding the Q-value is upsetted during the transition from one stage to another when the opponent changes play strategy.  During that time, reward is no received based on the previous policy's strategy and the Q-value suffered.  However, the exploration allows new policy to be learnec by building up new memories and the new winning counter-move bubbles back up to the top.  
+The max Q value of action model is also plotted.  It shows a nice convergenece over the length of game. Corresponding the Q-value is upsetted during the transition from one stage to another when the opponent changes its play strategy.  During that time, reward is not received based given the previous policy's strategy and corresponding the Q-value suffered.  However, the exploration allows new policy to be learned by building up new memories and the new winning counter-move bubbles back up to the top eventually and the winning rate recuperates. 
 
 # Future Works 
 
@@ -99,7 +101,8 @@ We need to further understand the inner working of Q values in the target model 
 
 1. Mnih, et.al.  "Playing Atari with Deep Reinforcement Learning", 2013
 2. Hasselt, et.al. "Deep Reinforcement Learning with Dobule Q-learning", 2015
-3. Mnih, et. al. "Human-Level control through deep reinforcement learning"
+3. Mnih, et. al. "Human-Level control through deep reinforcement learning", 2015
 4. Packer, et. al. "Assessing Generalization in Deep Reinforcement Learning"
 5. A. Oppermann, "self learing AI agents part-II Deep Q-learning", 2018
+6. Watkins & Dayan, "Q-Learning", 1992
 
