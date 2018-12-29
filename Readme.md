@@ -72,14 +72,16 @@ For a high dimensional PRNG like the Guassian generator, a DNN (especially a sma
 
 The following is the set of hyperparammeters in the game which can alter the outcome win rate and in general the adaptability of the AI agent.
 
-1. memory batch size = 32: the larger batch, the more reinforcement is used on each round making the convergence faster but would also make adaptation slower. 
-2. moving window size = 8: change the smoothing factor of moving average state variables.
-3. DNN layers = 3:  effectively the entropy of the NN and its ability to learning the distribution
-4. DNN nodes = 64: same as above
+1. memory batch size = 32: the larger batch, the more reinforcement is used on each round making the convergence faster but would also make adaptation slower.
+2. memory maxlen: this is done using python collection deque object. The longer the memory, the more experience it retains which could lead to faster convergence but can negatively affect adaptability since it needs time to flush out the memory when the opponents' behavior changes. 
+3. moving window size = 8: change the smoothing factor of moving average state variables.
+4. gamma - a factor to determine how much of the future action-value do you want the algorithm to incorporate at each step.
+5. DNN layers = 3:  effectively the entropy of the NN and its ability to learning the distribution
+6. DNN nodes = 64: same as above
 action to target model transfer learning (tau): how fast the transfer mimic after the action model. (we didn't play much around this one)
-5. reward system = 1 for win, 0 otherwise: using simple reward and allows the complexity of adaptation controlled by the NN design and the state space design.
-6. state design = too much state indicatores is a waste of computation resource since not all state variables are important.  Too little would hinder what the RL agent observes thus limits its policy forming ability. 
-7. epsilon: exploration percentage controlled in conjunction with the decay rate.  Note that there is a minimum value which is important to the adaptative effective since the system will continue to explore off-policy moves and it is how it discovers new opponent's behavior. 
+6. reward system = 1 for win, 0 otherwise: using simple reward and allows the complexity of adaptation controlled by the NN design and the state space design.
+7. state design = too much state indicatores is a waste of computation resource since not all state variables are important.  Too little would hinder what the RL agent observes thus limits its policy forming ability. 
+8. epsilon: exploration percentage controlled in conjunction with the decay rate.  Note that there is a minimum value which is important to the adaptative effective since the system will continue to explore off-policy moves and it is how it discovers new opponent's behavior. 
 
 # Results
 

@@ -122,7 +122,7 @@ class DDQN:
         # this controls how far out in history the "expeience replay" can select from
         self.memory  = deque(maxlen=2000)   
         # future reward discount rate of the max Q of next state
-        self.gamma = 0.105				  
+        self.gamma = 0.9 			  
         # epsilon denotes the fraction of time dedicated to exploration (as oppse to exploitation)
         self.epsilon = 1.0
         self.epsilon_min = 0.01
@@ -141,9 +141,9 @@ class DDQN:
     def create_model(self):
         model   = Sequential()
         state_shape  = self.env.state.shape[1]
-        model.add(Dense(64, input_dim=state_shape, activation="relu"))
-        model.add(Dense(64, activation="relu"))
-        model.add(Dense(64, activation="relu"))
+        model.add(Dense(24, input_dim=state_shape, activation="relu"))
+        model.add(Dense(24, activation="relu"))
+        model.add(Dense(24, activation="relu"))
 		# let the output be the predicted target value.  NOTE: do not use activation to squash it!
         model.add(Dense(len(self.env.action_space)))  
         model.compile(loss="mean_squared_error", optimizer=Adam(lr=self.learning_rate))
