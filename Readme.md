@@ -95,8 +95,11 @@ The max Q value of action model is also plotted.  It shows a nice convergenece o
 
 # Using LSTM as policy and tareget network
 
-As a second phase to this project, I have evolved the design to utilize a LSTM-based RNN in both the policy (action and tareget) networks.  The architecture is rather brute force and illustrated below.  The intuition is that LSTM should over time learn to perform better than a simple DNN given its inert ability to recognize sequential pattern. 
+As a second phase to this project, I have evolved the design to utilize a LSTM-based RNN in both the policy (action and tareget) networks.  The architecture is rather brute force and illustrated below.  The intuition is that LSTM should over time learn to perform better than a simple DNN given its inert ability to recognize sequential pattern.  In a nutshell, the DDQN's original DNN model (for both action and target model) is swapped with a LSTM.  Since the LSTM deals with and is trained on sequence, the overall design is changed to adjust for this arrangeement:
+1) the input to the LSTM is a sequence of state of length 'lookback'
+2) the DDQN experience replay concept is still retained.  However, each experience is now a sequence of states of lenght lookback.  For example, each experience reply is a sample from the deque memory, the code then retrieve the immediate prior loopback number of states.  The code then repeat the same retrieval process RL_batch number of times. 
 
+![pic4](https://github.com/dennylslee/rock-paper-scissors-DeepRL/blob/master/LSTM_based_ddqn_architecture.png)
 
 In general,  such change in architecture did not yield any significantly breakthrough in results (and to some degree, it is worse performing than a simple claissically trained static LSTM model).
 
@@ -109,6 +112,10 @@ In general,  such change in architecture did not yield any significantly breakth
 3)  Further testing was conduceted on a short (approx 30moves) self entered r-p-s sequence.  Based on a fair size LSTM, a consistently higher win rate is observed.  But this does not surpass the performance a classical (supervised learning) approach using a statically learned LSTM.
 
 All-in-all this LSTM architecture working within a DDQN structure is rather non-performing and better design is desirable. 
+
+![pic5]()
+
+![pic6]()
 
 # Future Works 
 
