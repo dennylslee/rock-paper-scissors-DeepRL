@@ -2,19 +2,19 @@
 
 The objective of this project is to construct an AI agent to play a simple 2 players rock-paper-scissors game using reinforcement learning (RL) technique - particularly the double-DQN algorithm.  
 
-In previous design project, we have built a player using simple LSTM-based neural network that is trained using traditional supervised learning method.  The downside of that is the model is effectively static and does not adapt to model drift or fundamental behavioral changes.  With a RL-based approach, we like to see that the AI agent demostrate some ability to counter the changing strategy of the opponent and continue to generate better win rate than the opposing player.  
+In previous design project, we have built a player using simple LSTM-based neural network that is trained using traditional supervised learning method.  The downside is that the model is effectively static and does not adapt to model drift or fundamental behavioral changes.  With a RL-based approach, we like to see that the AI agent demostrates some ability to counter the changing strategy of the opponent and continue to generate better win rate than the opposing player.  
 
-Note that unlike other RL project in which the AI agent is to learn a task successfully and generalize to other future data (i.e. a form of semi supervised learning using rewards as label - this is my analogy and is technically not precise), in this particular set up, there is no completion per se.  That is the game never ends. The RL agent simply continues to adapt and adjust as best as it can. 
+Note that unlike other RL project in which the AI agent is to learn a task successfully and generalizes to other future data (i.e. a form of semi supervised learning using rewards as label - this is my analogy and is technically not precise), in this particular set up, there is no completion per se.  That is the game never ends. The RL agent simply continues to adapt and adjust as best as it can. 
 
 ## Q-Learning Basics
 
-This project utiltized the double-DQN RL algorithm as the basis for the AI agent as player 1.  DeepMind was very instrutmental in popularizing Q-learning recent and had contributed multple architectural enhancements in recent years - thought Q-Learning was first pioneered by Watkins in 1992.  See few popular papers on DQN (deep Q-learning network) in the reference section.
+This project utiltized the double-DQN RL algorithm as the basis for the AI agent as player 1.  DeepMind was very instrutmental in popularizing Q-learning recently and had contributed multple architectural enhancements in recent years - do note that Q-Learning was first pioneered by Watkins in 1992.  See few popular papers on DQN (deep Q-learning network) in the reference section.
 
-In its essence, Deep Q-Learning is to learn a "policy" (which in practice is a deep learning network) such that it maximizes the expected return of future action. The Q-value is the "action value" function. Its absolute magnitude has no real meaning but is recurrsively derived to guide the system which action to take at any moment such that the chosen action is believed to lead to maximum future rewards. 
+In its essence, Deep Q-Learning is to learn a "policy" (which in practice is a deep learning network) such that it maximizes the expected return of future action. The Q-value is the "action value" function. Its absolute magnitude has no real meaning but is recurrsively derived to guide the system on which action to take at any moment such that the chosen action is believed to lead to maximum future rewards. 
 
 Some of the enhancments utilized in this design that is over and beyond basic Q-learning are as following.  Most of these are introduced mainly by DeepMind in recent years. 
 
-1) Dual models (hence the term "double") - one model is to drive the action decision (also sometime refers as online model or behavior model) and one to act as the target model.  The inner weights are "tranferred" from the action model to the target model on every move cycle.
+1) Dual models (hence the term "double") - one model is to drive the action decision (also sometime refers as online model or behavior model) and one to act as the target model.  The inner weights are "tranferred" from the action model to the target model on every move cycle on a discounted basis.
 2) Exploiting vs exploration using epsilon-greedy method. This is essential in any RL design since exploration is important, especially during the start of the process, for searching in different areas of that state space that might lead to better optimal operation position.  When exploring, it is often termed "off-policy" whereas taking an action according to exploitation is often termed "on-policy".
 3) Experience reply - instead of using most recent history as the learning space, DeepMind introduced the concept of experience reply in which past pass-through of the state space is stored in memory.  Such memories are recalled (sampled) at each move and used in the SGD process (thus achieving the reinforcement notion).
 
@@ -92,6 +92,23 @@ However, it is somewhat disappointing that win rate in any state does not outper
 ![pic3](https://github.com/dennylslee/rock-paper-scissors-DeepRL/blob/master/main_results_plot.png)
 
 The max Q value of action model is also plotted.  It shows a nice convergenece over the length of game. Corresponding the Q-value is upsetted during the transition from one stage to another when the opponent changes its play strategy.  During that time, reward is not received based given the previous policy's strategy and corresponding the Q-value suffered.  However, the exploration allows new policy to be learned by building up new memories and the new winning counter-move bubbles back up to the top eventually and the winning rate recuperates. 
+
+# Using LSTM as policy and tareget network
+
+As a second phase to this project, I have evolved the design to utilize a LSTM-based RNN in both the policy (action and tareget) networks.  The architecture is rather brute force and illustrated below.  The intuition is that LSTM should over time learn to perform better than a simple DNN given its inert ability to recognize sequential pattern. 
+
+
+In general,  such change in architecture did not yield any significantly breakthrough in results (and to some degree, it is worse performing than a simple claissically trained static LSTM model).
+
+1) It did not perform well (meaning win-tie-lost rate are roughly 33%) when the opponent is 'PRNG'.  The opponent is simply too high dimensions. 
+2) Some testing was done aginst a simplier 12bit 'LFSR' which means the sequence repeats itself in 4,096 moves.  
+- GRU vs LSTM were used with no apparent difference
+- most of the hyperparameters varied are (a) lookback length (b) inner LSTM unit size (b) experience reply batch size.
+- a flatten dense layer architecture versus a basic many-to-one LSTM architecture was tried with no apparent advantage (neither one improveds the performance)
+- seee a captured same results below.
+3)  Further testing was conduceted on a short (approx 30moves) self entered r-p-s sequence.  Based on a fair size LSTM, a consistently higher win rate is observed.  But this does not surpass the performance a classical (supervised learning) approach using a statically learned LSTM.
+
+All-in-all this LSTM architecture working within a DDQN structure is rather non-performing and better design is desirable. 
 
 # Future Works 
 
