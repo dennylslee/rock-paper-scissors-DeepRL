@@ -113,13 +113,13 @@ In general,  such change in architecture did not yield any significantly breakth
 
 All-in-all this LSTM architecture working within a DDQN structure is rather non-performing and better design is desirable. 
 
-![pic5]()
+![pic5](https://github.com/dennylslee/rock-paper-scissors-DeepRL/blob/master/figure_LSTM_lkbk200_unit100_1stage.png)
 
-![pic6]()
+![pic6](https://github.com/dennylslee/rock-paper-scissors-DeepRL/blob/master/figure_LSTM_lkbk100_unit50_SEQ1.png)
 
 # Future Works 
 
-Change to a LSTM based model architecture might significantly improve the win rate. 
+Will need to rethink a more appropropriate LSTM based solution to improve the win rate performance.
 
 We need to further understand the inner working of Q values in the target model section of the system.  There is no easy way to illustrate its inner working to show the adaptability yet. 
 
