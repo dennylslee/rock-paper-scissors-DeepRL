@@ -31,7 +31,7 @@ def genOneMove(self, mode, stage):
 	
 	elif mode == 'SEQ':					# simple repeating pattern as 'random generator'
 		dict = {'r':0, 'p':1, 's': 2}
-		seqlist = 'rpprsspsr'			# the pattern sequence here
+		seqlist = 'rpprsspsrsrpprspsprspsppsrrspsprrsspsrpsrpsrsps'			# the pattern sequence here
 		self.seqIndex = 0 if self.seqIndex == len(seqlist)-1 else self.seqIndex + 1
 		return dict[seqlist[self.seqIndex]]
 	
