@@ -16,7 +16,7 @@ Some of the enhancments utilized in this design that is over and beyond basic Q-
 
 1) Dual models (hence the term "double") - one model is to drive the action decision (also sometime refers as online model or behavior model) and one to act as the target model.  The inner weights are "tranferred" from the action model to the target model on every move cycle on a discounted basis.
 2) Exploiting vs exploration using epsilon-greedy method. This is essential in any RL design since exploration is important, especially during the start of the process, for searching in different areas of that state space that might lead to better optimal operation position.  When exploring, it is often termed "off-policy" whereas taking an action according to exploitation is often termed "on-policy".
-3) Experience reply - instead of using most recent history as the learning space, DeepMind introduced the concept of experience reply in which past pass-through of the state space is stored in memory.  Such memories are recalled (sampled) at each move and used in the SGD process (thus achieving the reinforcement notion).
+3) Experience replay - instead of using most recent history as the learning space, DeepMind introduced the concept of experience replay in which past pass-through of the state space is stored in memory.  Such memories are recalled (sampled) at each move and used in the SGD process (thus achieving the reinforcement notion).
 
 ## Acknowledgement
 
@@ -93,23 +93,23 @@ However, it is somewhat disappointing that win rate in any state does not outper
 
 The max Q value of action model is also plotted.  It shows a nice convergenece over the length of game. Corresponding the Q-value is upsetted during the transition from one stage to another when the opponent changes its play strategy.  During that time, reward is not received based given the previous policy's strategy and corresponding the Q-value suffered.  However, the exploration allows new policy to be learned by building up new memories and the new winning counter-move bubbles back up to the top eventually and the winning rate recuperates. 
 
-# Using LSTM as policy and tareget network
+# Using LSTM as policy and target network
 
-As a second phase to this project, I have evolved the design to utilize a LSTM-based RNN in both the policy (action and tareget) networks.  The architecture is rather brute force and illustrated below.  The intuition is that LSTM should over time learn to perform better than a simple DNN given its inert ability to recognize sequential pattern.  In a nutshell, the DDQN's original DNN model (for both action and target model) is swapped with a LSTM.  Since the LSTM deals with and is trained on sequence, the overall design is changed to adjust for this arrangeement:
-1) the input to the LSTM is a sequence of state of length 'lookback'
-2) the DDQN experience replay concept is still retained.  However, each experience is now a sequence of states of lenght lookback.  For example, each experience reply is a sample from the deque memory, the code then retrieve the immediate prior loopback number of states.  The code then repeat the same retrieval process RL_batch number of times. 
+As a second phase to this project, I have evolved the design to utilize a LSTM-based RNN in both the policy (action and target) networks.  The architecture is rather brute force and is illustrated below.  The intuition is that LSTM should over time learn to perform better than a simple DNN given its inert ability to recognize sequential pattern.  In a nutshell, the DDQN's original DNN model (for both action and target model) is swapped with a LSTM.  Since the LSTM deals with, and is trained on, sequence; the overall data preparation design is changed to adjust for this arrangeement:
+1) the input to the LSTM is a sequence of states. The sequence is of length 'lookback'
+2) the DDQN experience replay concept is still retained.  However, each experience is now a sequence of states of lenght lookback.  For example, each experience replay is a sample from the deque memory, the code then retrieves the immediate prior loopback number of states.  The code then repeat the same retrieval process RL_batch number of times. 
 
 ![pic4](https://github.com/dennylslee/rock-paper-scissors-DeepRL/blob/master/LSTM_based_ddqn_architecture.png)
 
-In general,  such change in architecture did not yield any significantly breakthrough in results (and to some degree, it is worse performing than a simple claissically trained static LSTM model).
+In general,  such change in architecture did not yield any significant breakthrough in results (and to some degree, it is worse performing than a simple claissically trained static LSTM model).
 
-1) It did not perform well (meaning win-tie-lost rate are roughly 33%) when the opponent is 'PRNG'.  The opponent is simply too high dimensions. 
-2) Some testing was done aginst a simplier 12bit 'LFSR' which means the sequence repeats itself in 4,096 moves.  
+1) It did not perform well (meaning win-tie-lost rate are roughly 33% each) when the opponent is 'PRNG'.  The opponent is simply too high dimensions. 
+2) Some testing were done aginst a simplier 12bit 'LFSR' which means the sequence repeats itself in 4,096 moves.  
 - GRU vs LSTM were used with no apparent difference
-- most of the hyperparameters varied are (a) lookback length (b) inner LSTM unit size (b) experience reply batch size.
-- a flatten dense layer architecture versus a basic many-to-one LSTM architecture was tried with no apparent advantage (neither one improveds the performance)
-- seee a captured same results below.
-3)  Further testing was conduceted on a short (approx 30moves) self entered r-p-s sequence.  Based on a fair size LSTM, a consistently higher win rate is observed.  But this does not surpass the performance a classical (supervised learning) approach using a statically learned LSTM.
+- the hyperparameters varied are (a) lookback length (b) inner LSTM unit size (b) experience reply batch size.
+- a flatten dense layer architecture versus a basic many-to-one LSTM architecture were tried and neither provide any apparent advantage (neither one improveds the performance)
+- see the captured results below.
+3)  Further testing was conducted on a short (approx 30moves) self-entered r-p-s sequence.  Based on a fairly small size LSTM, a consistently higher win rate is observed.  But this does not surpass the performance a classical (supervised learning) approach using a statically-trained LSTM.
 
 All-in-all this LSTM architecture working within a DDQN structure is rather non-performing and better design is desirable. 
 
@@ -119,9 +119,7 @@ All-in-all this LSTM architecture working within a DDQN structure is rather non-
 
 # Future Works 
 
-Will need to rethink a more appropropriate LSTM based solution to improve the win rate performance.
-
-We need to further understand the inner working of Q values in the target model section of the system.  There is no easy way to illustrate its inner working to show the adaptability yet. 
+We will need to rethink a more appropropriate LSTM-based solution to improve the win rate performance.
 
 # Reference
 
